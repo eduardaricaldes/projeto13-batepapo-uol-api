@@ -33,13 +33,12 @@ app.post("/participants", async (req, res)=> {
       error: isValid.error
     })
   }
-
   try{
     const response = await db.collection("participants").findOne({
       name: name
     });
-    if(response !== null){
-      const date = Date().now()
+    if(response === null){
+      const date = Date.now()
       db.collection("participants").insertOne({
         name:name, lastStatus: date,
       });
@@ -52,21 +51,64 @@ app.post("/participants", async (req, res)=> {
           time: dayjs(date).format("HH:MM:SS"),
         }
       )
+      return res.status(201).send()
     }else{
-      res.status(409)
+      return res.status(409).send({})
     }
   }catch (err){
-    res.status(500)
-  }
-
-  res.status(201)
+    return res.status(500).send()
+  } 
 })
 
-app.get("/participants",( req, res )=>{
-  db.collection("participants").find().toArray().then( participants=>{
-    console.log (participants);
-
-  });
+app.get("/participants", async( req, res )=>{
+  try {
+    const participants = await db.collection("participants").find().toArray()
+    res.send(participants);
+  } catch (error) {
+    res.status(500)
+  }
 });
+
+const valitationMessage = Joi.object({
+  to : Joi.string().min(1).required(),
+  text: Joi.string().min(1).required(),
+  type: Joi.string().allow('message', 'private_message').required(),
+  from: Joi.string().min(1).required(),
+});
+
+
+app.post("/messages", async (req, res) => {
+  const {to, text,type} = req.body;
+  const from = req.get("User");
+  const isValid = valitationMessage.validate({
+    to:to, 
+    text:text,
+    type:type,
+    from:from,
+  })
+
+  if("error" in isValid){
+    res.status(422);
+  }
+
+  try {
+    const response = await db.collection("participants").findOne({name:to})
+    if(response !== null){
+      db.collection("messages").insertOne({
+          from: from, 
+          to: 'Todos', 
+          text: 'entra na sala...', 
+          type: 'status', 
+          time: dayjs(Date.now()).format("HH:MM:SS"),
+      })
+      return res.status(201).send();
+    }else{
+      return res.status(422).send()
+    }
+  } catch (error) {
+    console.log(error)
+    return res.status(500).send()
+  }
+})
 
 app.listen (5000, () => console.log ("serve running import:5000") )
