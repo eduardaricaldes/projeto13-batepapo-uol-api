@@ -2,7 +2,7 @@ import express  from "express";
 import cors from "cors";
 import Joi from "joi";
 import dayjs from "dayjs";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 import { stripHtml } from "string-strip-html";
 
@@ -173,4 +173,27 @@ setInterval(async ()=> {
   }
 },15000)
 
+app.delete("/messages/:id", async(req, res)=>{
+  const {id} = req.params
+  const name= req.get("User")
+
+  try {
+
+    const message= await db.collection("messages").findOne({_id:ObjectId(id)});
+    if(message!== null){
+      const existsMessageUser= await db.collection("messages").findOne({_id:ObjectId(id), from: name});
+      if(existsMessageUser !== null) {
+        await db.collection("messages").deleteOne({_id:ObjectId(id), from: name});
+        res.status(202).send();
+      }else{
+        res.status(401).send();
+      }
+    }else{
+      res.status(404).send();
+    }
+  } catch (error) {
+    console.log (error)
+  }
+
+})
 app.listen (5000, () => console.log ("serve running import:5000") )
