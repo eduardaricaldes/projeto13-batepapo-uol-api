@@ -25,7 +25,7 @@ const participantsSchema = Joi.object({
   name: Joi.string().min(1).required(),
 });
 
-// rotas
+// ROTAS
 
 // # PARTICIPANTS
 app.post("/participants", async (req, res)=> {
@@ -135,6 +135,7 @@ app.get("/messages", async (req, res)=>{
   }
 })
 
+// # STATUS
 app.post("/status", async (req, res)=>{
   const header= req.get("User")
   try {
@@ -173,6 +174,7 @@ setInterval(async ()=> {
   }
 },15000)
 
+// #DELETE
 app.delete("/messages/:id", async(req, res)=>{
   const {id} = req.params
   const name= req.get("User")
@@ -193,6 +195,51 @@ app.delete("/messages/:id", async(req, res)=>{
     }
   } catch (error) {
     console.log (error)
+  }
+
+})
+
+//# PUT
+
+const valitationMessagePut = Joi.object({
+  to : Joi.string().min(1).required(),
+  text: Joi.string().min(1).required(),
+  type: Joi.string().valid('message', 'private_message').required(),
+  from: Joi.string().min(1).required(),
+});
+
+app.put("/messages/:id", async (req, res)=>{
+  const {id} = req.params;
+  const {to, text,type} = req.body;
+  const from = req.get("User");
+  const isValid = valitationMessagePut.validate({
+   to:to, 
+   text:text,
+   type:type,
+   from:from,
+  });
+
+  if("error" in isValid){
+    return res.status(422).send()
+  };
+
+  const message= await db.collection("messages").findOne({_id:ObjectId(id)});
+  if(message!== null){
+    const existsMessageUser= await db.collection("messages").findOne({_id:ObjectId(id), from: from});
+    if(existsMessageUser !== null) {
+      await db.collection("messages").updateOne({_id:ObjectId(id)}, {
+        $set: {
+          to: stripHtml(to).result.trim(),
+          text: stripHtml(text).result.trim(),
+          type: stripHtml(type).result.trim(),
+        }
+      });
+      res.status(202).send();
+    }else{
+      res.status(401).send();
+    }
+  }else{
+    res.status(404).send();
   }
 
 })
