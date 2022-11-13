@@ -4,6 +4,8 @@ import Joi from "joi";
 import dayjs from "dayjs";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
+import { stripHtml } from "string-strip-html";
+
 dotenv.config()
 
 const app = express ();
@@ -32,27 +34,28 @@ app.post("/participants", async (req, res)=> {
   const isValid = participantsSchema.validate({
     name: name,
   });
-
+  const username = stripHtml(name).result
+  
   if('error' in isValid) {
     return res.status(422).send()
   }
   try{
     const response = await db.collection("participants").findOne({
-      name: name
+      name: username
     });
 
     if(response === null){
       const date = Date.now()
       db.collection("participants").insertOne({
-        name:name, lastStatus: date,
+        name:username, lastStatus: date,
       });
       db.collection("messages").insertOne(
         {
-          from: name, 
+          from: username, 
           to: 'Todos', 
           text: 'entra na sala...', 
           type: 'status', 
-          time: dayjs(date).format("HH:MM:SS"),
+          time: dayjs(date).format("HH:mm:ss"),
         }
       )
       return res.status(201).send()
@@ -99,11 +102,11 @@ app.post("/messages", async (req, res) => {
     const response = await db.collection("participants").findOne({name:to})
     if(response !== null){
       db.collection("messages").insertOne({
-          from: from, 
-          to: to, 
-          text: text, 
-          type: type, 
-          time: dayjs(Date.now()).format("HH:MM:SS"),
+          from: stripHtml(from).result.trim(), 
+          to: stripHtml(to).result.trim(), 
+          text: stripHtml(text).result.trim(), 
+          type: stripHtml(type).result.trim(), 
+          time: dayjs(Date.now()).format("HH:mm:ss"),
       })
       return res.status(201).send();
     }else{
@@ -160,7 +163,7 @@ setInterval(async ()=> {
     if(response.length > 0) {
       response.forEach(async(participant) => {
         await db.collection("participants").deleteOne({_id: participant._id});
-        const message = {from: participant.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format("HH:MM:SS")}
+        const message = {from: participant.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format("HH:mm:ss")}
         deletedParticipants.push(message);
         await db.collection("messages").insertOne(message);
       });
