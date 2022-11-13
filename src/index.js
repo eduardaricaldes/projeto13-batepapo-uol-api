@@ -113,4 +113,18 @@ app.post("/messages", async (req, res) => {
   }
 })
 
+app.get("/messages", async (req, res)=>{
+  const {limit}= req.query
+  let limitMessages=0;
+  if(limit){
+    limitMessages=parseInt(limit);
+  }
+  try {
+    const response = await db.collection("messages").find().limit(limitMessages).toArray()
+    res.send(response);
+  } catch (error) {
+    res.status(500).send();    
+  }
+})
+
 app.listen (5000, () => console.log ("serve running import:5000") )
