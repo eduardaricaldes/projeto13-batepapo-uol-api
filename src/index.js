@@ -130,4 +130,20 @@ app.get("/messages", async (req, res)=>{
   }
 })
 
+app.post("/status", async (req, res)=>{
+  const header= req.get("User")
+  try {
+    const response = await db.collection("participants").findOne({name:header})
+    if(response!== null){
+      await db.collection("participants").updateOne({_id:response._id},{$set:{lastStatus:Date.now()}})
+      res.status(200).send();
+    }else{
+      res.status(404).send();
+    }
+    
+  } catch (error) {
+    
+  }
+})
+
 app.listen (5000, () => console.log ("serve running import:5000") )
