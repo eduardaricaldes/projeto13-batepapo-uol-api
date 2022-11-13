@@ -98,9 +98,9 @@ app.post("/messages", async (req, res) => {
     if(response !== null){
       db.collection("messages").insertOne({
           from: from, 
-          to: 'Todos', 
-          text: 'entra na sala...', 
-          type: 'status', 
+          to: to, 
+          text: text, 
+          type: type, 
           time: dayjs(Date.now()).format("HH:MM:SS"),
       })
       return res.status(201).send();
@@ -114,13 +114,16 @@ app.post("/messages", async (req, res) => {
 })
 
 app.get("/messages", async (req, res)=>{
-  const {limit}= req.query
+  const {limit}= req.query;
+  const from = req.get("User");
   let limitMessages=0;
   if(limit){
     limitMessages=parseInt(limit);
   }
   try {
-    const response = await db.collection("messages").find().limit(limitMessages).toArray()
+    const response = await db.collection("messages").find({
+      from:from
+    }).limit(limitMessages).toArray()
     res.send(response);
   } catch (error) {
     res.status(500).send();    
