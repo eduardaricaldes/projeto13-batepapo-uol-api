@@ -146,4 +146,26 @@ app.post("/status", async (req, res)=>{
   }
 })
 
+let deletedParticipants = []
+setInterval(async ()=> {
+  const actualDate = new Date()
+  const last10Seconds= new Date(actualDate.setSeconds(actualDate.getSeconds() - 10)).getTime();
+  try {
+    const response = await db.collection("participants").find({lastStatus:{
+      $lte: last10Seconds
+    }}).toArray();
+
+    if(response.length > 0) {
+      response.forEach(async(participant) => {
+        await db.collection("participants").deleteOne({_id: participant._id});
+        const message = {from: participant.name, to: 'Todos', text: 'sai da sala...', type: 'status', time: dayjs(Date.now()).format("HH:MM:SS")}
+        deletedParticipants.push(message);
+        await db.collection("messages").insertOne(message);
+      });
+    }
+  } catch (error) {
+    console.log (error)
+  }
+},15000)
+
 app.listen (5000, () => console.log ("serve running import:5000") )
