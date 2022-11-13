@@ -3,18 +3,20 @@ import cors from "cors";
 import Joi from "joi";
 import dayjs from "dayjs";
 import { MongoClient } from "mongodb";
+import dotenv from "dotenv";
+dotenv.config()
 
 const app = express ();
 app.use(cors());
 app.use (express.json());
 
 //conectando ao banco 
-const mongoClient = new MongoClient("mongodb://localhost:27017/dbDuda");
+const mongoClient = new MongoClient(process.env.MONGO_URI);
 let db;
 
 
 mongoClient.connect().then(()=>{
-  db = mongoClient.db("dbDuda")
+  db = mongoClient.db(process.env.MONGO_DATABASE_NAME)
 });
 
 const participantsSchema = Joi.object({
