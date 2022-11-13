@@ -21,6 +21,9 @@ const participantsSchema = Joi.object({
   name: Joi.string().min(1).required(),
 });
 
+// rotas
+
+// # PARTICIPANTS
 app.post("/participants", async (req, res)=> {
   const {name} = req.body;
 
@@ -29,14 +32,13 @@ app.post("/participants", async (req, res)=> {
   });
 
   if('error' in isValid) {
-    return res.status(422).send({
-      error: isValid.error
-    })
+    return res.status(422).send()
   }
   try{
     const response = await db.collection("participants").findOne({
       name: name
     });
+
     if(response === null){
       const date = Date.now()
       db.collection("participants").insertOne({
@@ -53,14 +55,14 @@ app.post("/participants", async (req, res)=> {
       )
       return res.status(201).send()
     }else{
-      return res.status(409).send({})
+      return res.status(409).send()
     }
   }catch (err){
     return res.status(500).send()
   } 
 })
 
-app.get("/participants", async( req, res )=>{
+app.get("/participants", async(req, res )=>{
   try {
     const participants = await db.collection("participants").find().toArray()
     res.send(participants);
@@ -69,13 +71,13 @@ app.get("/participants", async( req, res )=>{
   }
 });
 
+// # MESSAGES
 const valitationMessage = Joi.object({
   to : Joi.string().min(1).required(),
   text: Joi.string().min(1).required(),
-  type: Joi.string().allow('message', 'private_message').required(),
+  type: Joi.string().valid('message', 'private_message').required(),
   from: Joi.string().min(1).required(),
 });
-
 
 app.post("/messages", async (req, res) => {
   const {to, text,type} = req.body;
@@ -88,7 +90,7 @@ app.post("/messages", async (req, res) => {
   })
 
   if("error" in isValid){
-    res.status(422);
+    return res.status(422).send()
   }
 
   try {
